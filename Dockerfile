@@ -8,7 +8,7 @@ WORKDIR /app
 RUN git clone https://github.com/hjdhnx/drpy-node.git .
 
 # 可选：国内源
-RUN npm config set registry https://registry.npmmirror.com
+# RUN npm config set registry https://registry.npmmirror.com
 
 # 构建时安装依赖
 RUN yarn install --non-interactive && yarn add puppeteer
