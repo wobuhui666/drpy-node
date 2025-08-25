@@ -1,50 +1,55 @@
 # 构建器阶段
-# 使用node:current-alpine3.21作为基础镜像
-FROM node:current-alpine3.21 AS builder
+FROM node:22-alpine AS builder
 
-# 安装git
+# 确保 yarn 可用（Node 22 自带 corepack）
+RUN corepack enable
+
+# 安装 git
 RUN apk add --no-cache git
 
-# 如果您需要配置git以使用特定的HTTP版本，请确保这是出于必要和安全考虑
+# 如确有需要才保留这个设置
 RUN git config --global http.version HTTP/1.1
 
-# 创建一个工作目录
+# 工作目录
 WORKDIR /app
 
-# 克隆GitHub仓库到工作目录
+# 克隆仓库
 RUN git clone https://github.com/hjdhnx/drpy-node.git .
 
-# 设置npm镜像为npmmirror
-RUN npm config set registry https://registry.npmmirror.com
+# 使用中国镜像（可按需保留）
+# RUN npm config set registry https://registry.npmmirror.com
 
-# 全局安装pm2工具(yarn已经自带了不需要再自己装)
+# 全局安装 pm2
 RUN npm install -g pm2
 
-# 安装项目依赖项和puppeteer
-RUN yarn && yarn add puppeteer
+# （可选）使用系统 Chromium，Puppeteer 跑得更稳
+# 注：如果你希望 Puppeteer 自己下载 Chrome，可以删除这些行
+RUN apk add --no-cache chromium nss freetype harfbuzz ttf-freefont
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
-# 复制工作目录中的所有文件到一个临时目录中
-# 以便在运行器阶段中使用
-RUN mkdir /tmp/drpys && cp -r /app/* /tmp/drpys/
+# 安装项目依赖并安装 puppeteer
+# 若仓库没有 lockfile，yarn 会正常安装
+RUN yarn install --non-interactive && yarn add puppeteer
 
-# 运行器阶段
-# 使用alpine:latest作为基础镜像来创建一个更小的镜像
-# 但是无法用pm2
-FROM alpine:latest AS runner
+# 复制到临时目录（保留你的做法）
+RUN mkdir -p /tmp/drpys && cp -r /app/* /tmp/drpys/
 
-# 创建一个工作目录
+# 运行器阶段（也用 Node 22，以便可用 pm2 / Node API）
+FROM node:22-alpine AS runner
+
+# 工作目录
 WORKDIR /app
 
-# 复制构建器阶段中准备好的文件和依赖项到运行器阶段的工作目录中
+# 如果在 builder 装了系统 Chromium，这里也要装（运行时需要）
+RUN apk add --no-cache chromium nss freetype harfbuzz ttf-freefont
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
+# 复制构建产物
 COPY --from=builder /tmp/drpys /app
 
-# 安装Node.js运行时（如果需要的话，这里已经假设在构建器阶段中安装了所有必要的Node.js依赖项）
-# 由于我们已经将node_modules目录复制到了运行器阶段，因此这里不需要再次安装npm或node_modules中的依赖项
-# 但是，我们仍然需要安装Node.js运行时本身（除非drpys项目是一个纯静态资源服务，不需要Node.js运行时）
-RUN apk add --no-cache nodejs
-
-# 暴露应用程序端口（根据您的项目需求调整）
+# 暴露端口
 EXPOSE 5757
 
-# 指定容器启动时执行的命令
-CMD ["node", "index.js"]
+# 用 pm2 更稳（单进程则改成 ["node","index.js"]）
+CMD ["pm2-runtime", "index.js"]
