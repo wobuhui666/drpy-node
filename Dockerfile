@@ -5,7 +5,7 @@ RUN corepack enable
 RUN apk add --no-cache git
 
 WORKDIR /app
-RUN git clone https://github.com/hjdhnx/drpy-node.git .
+RUN git clone https://github.com/wobuhui666/drpy-node.git .
 
 # 可选：国内源
 # RUN npm config set registry https://registry.npmmirror.com
