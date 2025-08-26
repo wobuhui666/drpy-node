@@ -1,10 +1,11 @@
 import fastifyStatic from '@fastify/static';
 
 export default (fastify, options, done) => {
-    // 静态资源
+    // 静态资源 - public目录支持/public/前缀访问
     fastify.register(fastifyStatic, {
         root: options.publicDir,
         prefix: '/public/',
+        decorateReply: false,
     });
 
     fastify.register(fastifyStatic, {
@@ -55,6 +56,12 @@ export default (fastify, options, done) => {
     fastify.register(fastifyStatic, {
         root: options.xbpqDir,
         prefix: '/xbpq/', // 新的访问路径前缀
+        decorateReply: false, // 禁用 sendFile
+    });
+
+    fastify.register(fastifyStatic, {
+        root: options.viewsDir,
+        prefix: '/views/', // views目录的访问路径前缀
         decorateReply: false, // 禁用 sendFile
     });
 

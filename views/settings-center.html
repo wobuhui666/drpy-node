@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置中心 - DrPy Node</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .settings-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .feature-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .nav-pills .nav-link {
+            border-radius: 25px;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+        
+        .nav-pills .nav-link.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+        
+        .qr-container {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .qr-code {
+            max-width: 300px;
+            margin: 1rem auto;
+            border: 2px dashed #dee2e6;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .quick-select-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .quick-select-btn {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 20px;
+        }
+        
+        .platform-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 0.5rem;
+            border-radius: 50%;
+        }
+        
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 0.5rem;
+        }
+        
+        .status-success { background-color: #28a745; }
+        .status-warning { background-color: #ffc107; }
+        .status-error { background-color: #dc3545; }
+        
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            background: white;
+        }
+        
+        .chat-message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+        }
+        
+        .chat-user {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .chat-ai {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部 -->
+    <div class="settings-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-0"><i class="fas fa-cogs me-3"></i>设置中心</h1>
+                    <p class="mb-0 mt-2 opacity-75">DrPy Node 系统配置与管理中心</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-light" id="refreshBtn">
+                            <i class="fas fa-sync-alt me-1"></i>刷新
+                        </button>
+                        <button type="button" class="btn btn-outline-light" id="exportBtn">
+                            <i class="fas fa-download me-1"></i>导出配置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 导航标签 -->
+        <ul class="nav nav-pills justify-content-center mb-4" id="settingsNav">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="pill" href="#push-tab">
+                    <i class="fas fa-share me-2"></i>推送功能
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#chat-tab">
+                    <i class="fas fa-comments me-2"></i>AI对话
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#cookies-tab">
+                    <i class="fas fa-cookie me-2"></i>Cookie管理
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#system-tab">
+                    <i class="fas fa-server me-2"></i>系统配置
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="pill" href="#advanced-tab">
+                    <i class="fas fa-cog me-2"></i>高级设置
+                </a>
+            </li>
+        </ul>
+
+        <!-- 标签页内容 -->
+        <div class="tab-content">
+            <!-- 推送功能 -->
+            <div class="tab-pane fade show active" id="push-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-video me-2"></i>视频推送</h5>
+                            <p class="text-muted">推送视频链接进行播放，支持各种格式</p>
+                            
+                            <!-- 快速选择按钮 -->
+                            <div class="quick-select-buttons">
+                                <button class="btn btn-outline-primary quick-select-btn" data-value="https://v.qq.com/x/cover/mzc00200vkqr54u/u4100l66fas.html">腾讯</button>
+                                <button class="btn btn-outline-primary quick-select-btn" data-value="http://www.iqiyi.com/v_1b0tk1b8tl8.html">爱奇艺</button>
+                                <button class="btn btn-outline-success quick-select-btn" data-value="https://pan.quark.cn/s/6c8158e258f3">夸克</button>
+                                <button class="btn btn-outline-info quick-select-btn" data-value="https://drive.uc.cn/s/59023f57d3ce4?public=1">UC</button>
+                                <button class="btn btn-outline-warning quick-select-btn" data-value="https://www.alipan.com/s/vgXMcowK8pQ">阿里</button>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="videoUrl" class="form-label">视频地址</label>
+                                <textarea class="form-control" id="videoUrl" rows="3" 
+                                        placeholder="请输入视频地址，支持网盘、官链、直链、待嗅探链接"></textarea>
+                            </div>
+                            <button class="btn btn-primary" id="pushVideoBtn">
+                                <i class="fas fa-play me-2"></i>推送播放
+                                <span class="loading-spinner spinner-border spinner-border-sm ms-2"></span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-book me-2"></i>小说推送</h5>
+                            <p class="text-muted">推送番茄小说网页链接进行解析</p>
+                            
+                            <!-- 小说快速选择 -->
+                            <div class="quick-select-buttons">
+                                <button class="btn btn-outline-secondary quick-select-btn" data-target="novel" data-value="https://fanqienovel.com/page/7421167583522458648">大一实习</button>
+                                <button class="btn btn-outline-secondary quick-select-btn" data-target="novel" data-value="https://fanqienovel.com/page/7143038691944959011">十日终焉</button>
+                                <button class="btn btn-outline-secondary quick-select-btn" data-target="novel" data-value="https://fanqienovel.com/page/6982529841564224526">斩神</button>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="novelUrl" class="form-label">小说链接</label>
+                                <input type="url" class="form-control" id="novelUrl" 
+                                       placeholder="https://fanqienovel.com/page/...">
+                            </div>
+                            <button class="btn btn-success" id="pushNovelBtn">
+                                <i class="fas fa-book-open me-2"></i>推送解析
+                                <span class="loading-spinner spinner-border spinner-border-sm ms-2"></span>
+                            </button>
+                        </div>
+                        
+                        <div class="config-section">
+                            <h5><i class="fas fa-search me-2"></i>源内搜索</h5>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" id="searchKeyword" placeholder="输入搜索关键词">
+                                <select class="form-select" id="searchSource">
+                                    <option value="push">推送</option>
+                                    <option value="quark">夸克</option>
+                                    <option value="uc">UC</option>
+                                    <option value="ali">阿里</option>
+                                    <option value="test">测试</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-info" id="searchBtn">
+                                <i class="fas fa-search me-2"></i>搜索
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI对话 -->
+            <div class="tab-pane fade" id="chat-tab">
+                <div class="config-section">
+                    <h5><i class="fas fa-robot me-2"></i>AI连续对话</h5>
+                    <p class="text-muted">与AI进行连续对话，支持多种AI模型</p>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <div class="chat-container" id="chatContainer">
+                                <div class="text-muted text-center">开始新的对话...</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">AI设置</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">当前AI</label>
+                                        <select class="form-select" id="aiModel">
+                                            <option value="1">讯飞星火</option>
+                                            <option value="2">DeepSeek</option>
+                                            <option value="3">讯飞智能体</option>
+                                            <option value="4">Kimi</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-warning btn-sm w-100" id="clearChatBtn">
+                                        <i class="fas fa-trash me-1"></i>清空对话记录
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <textarea class="form-control" id="chatInput" placeholder="输入您的问题..." rows="2"></textarea>
+                        <button class="btn btn-primary" id="sendChatBtn">
+                            <i class="fas fa-paper-plane me-1"></i>发送
+                            <span class="loading-spinner spinner-border spinner-border-sm ms-2"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cookie管理 -->
+            <div class="tab-pane fade" id="cookies-tab">
+                <div class="row">
+                    <!-- 夸克 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="feature-card card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="/images/icon_cookie/夸克.webp" class="platform-icon" alt="夸克">
+                                    <h5 class="mb-0">夸克网盘</h5>
+                                    <span class="status-indicator status-warning" id="quarkStatus"></span>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control mb-2" id="quarkAuthCode" placeholder="入库授权码">
+                                    <textarea class="form-control" id="quarkCookie" rows="3" placeholder="夸克Cookie"></textarea>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-primary" id="setQuarkCookieBtn">设置</button>
+                                    <button class="btn btn-outline-secondary" id="getQuarkCookieBtn">查看</button>
+                                    <button class="btn btn-success" id="quarkScanBtn">扫码</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- UC -->
+                    <div class="col-md-6 mb-4">
+                        <div class="feature-card card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="/images/icon_cookie/UC.png" class="platform-icon" alt="UC">
+                                    <h5 class="mb-0">UC网盘</h5>
+                                    <span class="status-indicator status-error" id="ucStatus"></span>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control mb-2" id="ucAuthCode" placeholder="入库授权码">
+                                    <textarea class="form-control" id="ucCookie" rows="3" placeholder="UC Cookie"></textarea>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-primary" id="setUcCookieBtn">设置</button>
+                                    <button class="btn btn-outline-secondary" id="getUcCookieBtn">查看</button>
+                                    <button class="btn btn-success" id="ucScanBtn">扫码</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 阿里云盘 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="feature-card card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="/images/icon_cookie/阿里.png" class="platform-icon" alt="阿里">
+                                    <h5 class="mb-0">阿里云盘</h5>
+                                    <span class="status-indicator status-success" id="aliStatus"></span>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control mb-2" id="aliAuthCode" placeholder="入库授权码">
+                                    <textarea class="form-control" id="aliToken" rows="3" placeholder="阿里Token"></textarea>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-primary" id="setAliTokenBtn">设置</button>
+                                    <button class="btn btn-outline-secondary" id="getAliTokenBtn">查看</button>
+                                    <button class="btn btn-success" id="aliScanBtn">扫码</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 哔哩哔哩 -->
+                    <div class="col-md-6 mb-4">
+                        <div class="feature-card card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="/images/icon_cookie/哔哩.png" class="platform-icon" alt="哔哩">
+                                    <h5 class="mb-0">哔哩哔哩</h5>
+                                    <span class="status-indicator status-warning" id="biliStatus"></span>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" class="form-control mb-2" id="biliAuthCode" placeholder="入库授权码">
+                                    <textarea class="form-control" id="biliCookie" rows="3" placeholder="哔哩Cookie"></textarea>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-primary" id="setBiliCookieBtn">设置</button>
+                                    <button class="btn btn-outline-secondary" id="getBiliCookieBtn">查看</button>
+                                    <button class="btn btn-success" id="biliScanBtn">扫码</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 天翼云盘 -->
+                    <div class="col-md-12 mb-4">
+                        <div class="feature-card card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <img src="/images/icon_cookie/天翼.png" class="platform-icon" alt="天翼">
+                                    <h5 class="mb-0">天翼云盘</h5>
+                                    <span class="status-indicator status-error" id="cloudStatus"></span>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control mb-2" id="cloudAuthCode" placeholder="入库授权码">
+                                        <input type="text" class="form-control" id="cloudAccount" placeholder="天翼账号">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" class="form-control mb-2" placeholder="入库授权码">
+                                        <input type="password" class="form-control" id="cloudPassword" placeholder="天翼密码">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="btn-group w-100" role="group">
+                                            <button class="btn btn-primary" id="setCloudAccountBtn">设置账号</button>
+                                            <button class="btn btn-success" id="setCloudPasswordBtn">设置密码</button>
+                                        </div>
+                                        <div class="btn-group w-100 mt-2" role="group">
+                                            <button class="btn btn-outline-secondary" id="getCloudAccountBtn">查看账号</button>
+                                            <button class="btn btn-outline-secondary" id="getCloudPasswordBtn">查看密码</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 系统配置 -->
+            <div class="tab-pane fade" id="system-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-shield-alt me-2"></i>安全设置</h5>
+                            <div class="mb-3">
+                                <label class="form-label">青少年模式</label>
+                                <select class="form-select" id="hideAdult">
+                                    <option value="0">关闭</option>
+                                    <option value="1">开启（隐藏18+源）</option>
+                                </select>
+                                <div class="form-text">开启后将在所有接口隐藏18+源</div>
+                            </div>
+                            <button class="btn btn-warning" id="setHideAdultBtn">应用设置</button>
+                        </div>
+
+                        <div class="config-section">
+                            <h5><i class="fas fa-server me-2"></i>播放代理设置</h5>
+                            <div class="mb-3">
+                                <label class="form-label">线程数</label>
+                                <input type="number" class="form-control" id="threadCount" placeholder="默认为1" min="1" max="20">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">代理模式</label>
+                                <select class="form-select" id="proxyMode">
+                                    <option value="1">内存加速</option>
+                                    <option value="2">磁盘加速</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">原代本类型</label>
+                                <select class="form-select" id="proxyType">
+                                    <option value="1">不夜5575</option>
+                                    <option value="2">mediaGo 7777</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="setProxyBtn">应用设置</button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-puzzle-piece me-2"></i>源管理设置</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableDr2">
+                                        <label class="form-check-label" for="enableDr2">DrPy2源</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enablePy">
+                                        <label class="form-check-label" for="enablePy">Python源</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableCat">
+                                        <label class="form-check-label" for="enableCat">Cat源</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableOldConfig">
+                                        <label class="form-check-label" for="enableOldConfig">兼容性配置</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-success mt-3" id="setSourceBtn">应用设置</button>
+                        </div>
+
+                        <div class="config-section">
+                            <h5><i class="fas fa-robot me-2"></i>AI配置</h5>
+                            <div class="mb-3">
+                                <label class="form-label">当前AI</label>
+                                <select class="form-select" id="currentAI">
+                                    <option value="1">讯飞星火</option>
+                                    <option value="2">DeepSeek</option>
+                                    <option value="3">讯飞智能体</option>
+                                    <option value="4">Kimi</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">讯飞AI鉴权</label>
+                                <input type="text" class="form-control" id="sparkAuthKey" placeholder="讯飞AI鉴权密钥">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">DeepSeek API Key</label>
+                                <input type="password" class="form-control" id="deepseekApiKey" placeholder="DeepSeek API密钥">
+                            </div>
+                            <button class="btn btn-info" id="setAIBtn">应用AI设置</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级设置 -->
+            <div class="tab-pane fade" id="advanced-tab">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-link me-2"></i>接口挂载</h5>
+                            <div class="mb-3">
+                                <label class="form-label">挂载地址</label>
+                                <input type="url" class="form-control" id="linkUrl" placeholder="可以挂载t4配置链接">
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableLinkData">
+                                        <label class="form-check-label" for="enableLinkData">启用挂载数据</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableLinkPush">
+                                        <label class="form-check-label" for="enableLinkPush">启用挂载推送</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="btn-group w-100" role="group">
+                                <button class="btn btn-primary" id="setLinkBtn">设置挂载</button>
+                                <button class="btn btn-success" id="updateLinkBtn">更新数据</button>
+                                <button class="btn btn-info" id="viewLinkBtn">查看数据</button>
+                            </div>
+                        </div>
+
+                        <div class="config-section">
+                            <h5><i class="fas fa-video me-2"></i>视频解析</h5>
+                            <div class="mb-3">
+                                <label class="form-label">芒果解析画质</label>
+                                <select class="form-select" id="mgQuality">
+                                    <option value="9">4K</option>
+                                    <option value="4" selected>1080p</option>
+                                    <option value="3">720p</option>
+                                    <option value="2">560p</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" id="setVideoParseBtn">应用设置</button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="config-section">
+                            <h5><i class="fas fa-bug me-2"></i>调试设置</h5>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="showCurl">
+                                        <label class="form-check-label" for="showCurl">显示Curl</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="showReq">
+                                        <label class="form-check-label" for="showReq">显示请求</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="allowForward">
+                                        <label class="form-check-label" for="allowForward">允许代理转发</label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="enableRuleName">
+                                        <label class="form-check-label" for="enableRuleName">配置名称开关</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-warning mt-3" id="setDebugBtn">应用调试设置</button>
+                        </div>
+
+                        <div class="config-section">
+                            <h5><i class="fas fa-database me-2"></i>缓存管理</h5>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-outline-danger" id="clearCacheBtn">
+                                    <i class="fas fa-trash me-1"></i>清除缓存
+                                </button>
+                                <button class="btn btn-outline-warning" id="resetConfigBtn">
+                                    <i class="fas fa-undo me-1"></i>重置配置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 操作结果提示区域 -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div id="alertContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 二维码模态框 -->
+    <div class="modal fade" id="qrcodeModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-qrcode me-2"></i><span id="qrcodeTitle">扫码登录</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="qr-container">
+                        <div class="mb-3">
+                            <span id="qrcodeMessage">请使用对应APP扫码登录</span>
+                        </div>
+                        <div class="qr-code" id="qrcodeContainer">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">生成二维码中...</span>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                     id="qrcodeProgress" style="width: 0%"></div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">扫码倒计时: <span id="countdown">120</span>s</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="refreshQrcodeBtn">
+                        <i class="fas fa-sync-alt me-1"></i>刷新二维码
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 配置查看模态框 -->
+    <div class="modal fade" id="configModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i><span id="configTitle">配置查看</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">当前值:</label>
+                        <textarea class="form-control" id="configValue" rows="8" readonly></textarea>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">只读模式 - 如需修改请使用对应的设置功能</small>
+                        <button class="btn btn-outline-primary btn-sm" id="copyConfigBtn">
+                            <i class="fas fa-copy me-1"></i>复制
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1060;">
+        <div id="successToast" class="toast" role="alert">
+            <div class="toast-header text-success">
+                <i class="fas fa-check-circle me-2"></i>
+                <strong class="me-auto">成功</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="successMessage"></div>
+        </div>
+        
+        <div id="errorToast" class="toast" role="alert">
+            <div class="toast-header text-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <strong class="me-auto">错误</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="errorMessage"></div>
+        </div>
+        
+        <div id="warningToast" class="toast" role="alert">
+            <div class="toast-header text-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong class="me-auto">警告</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body" id="warningMessage"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="/pubulic/js/settings-center.js"></script>
+</body>
+</html>
